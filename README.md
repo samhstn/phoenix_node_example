@@ -1,5 +1,13 @@
 # NodeExample
 
+Example of how to run a node server along side your phoenix application
+
+### Setup
+
+This project uses:
++ [goon](https://github.com/alco/goon) (v1.1) (Ensure to have this executable in your `$PATH`)
++ [phoenix](http://phoenixframework.org/) (1.3)
+
 To start your Phoenix server:
 
   * Install dependencies with `mix deps.get`
