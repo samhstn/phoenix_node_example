@@ -1,4 +1,4 @@
-defmodule NodeExample.Worker do
+defmodule NodeExample.Node do
   use GenServer
   alias Porcelain.Process, as: Proc
   alias Porcelain.Result, as: Res
@@ -19,8 +19,7 @@ defmodule NodeExample.Worker do
 
     receive do
       {^pid, :data, :out, log} ->
-        IO.puts "continue"
-        IO.puts log
+        IO.puts "Node log => #{log}"
       {^pid, :result, %Res{status: _status}} ->
         IO.puts "restarting"
         stop_current_node_process()
@@ -30,11 +29,12 @@ defmodule NodeExample.Worker do
 
   defp stop_current_node_process() do
     {output, 0} = System.cmd("lsof", ["-i"])
-    node_line =
+    node_pid =
       output
       |> String.split("\n")
       |> Enum.find(&Regex.match?(~r/^node/, &1))
-    node_pid = Regex.run(~r/^node\s+(\d+)/, node_line) |> Enum.at(1)
+      |> (&Regex.run(~r/^node\s+(\d+)/, &1)).()
+      |> Enum.at(1)
     System.cmd "kill", ["-9", node_pid]
   end
 end
