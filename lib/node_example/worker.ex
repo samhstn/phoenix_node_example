@@ -1,20 +1,40 @@
 defmodule NodeExample.Worker do
   use GenServer
+  alias Porcelain.Process, as: Proc
+  alias Porcelain.Result, as: Res
 
-  def init(opts \\ []) do
-    shedule_work()
-    {:ok, opts}
+  def start_link do
+    GenServer.start_link __MODULE__, %{}
   end
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, %{})
+  def init(state) do
+    start_node_server()
+    {:ok, state}
   end
 
-  def handle_info(:work, state) do
-    shedule_work()
+  def start_node_server() do
+    cmd = "node node_app/server/index.js"
+    opts = [out: {:send, self()}]
+    %Proc{pid: pid} = Porcelain.spawn_shell(cmd, opts)
+
+    receive do
+      {^pid, :data, :out, log} ->
+        IO.puts "continue"
+        IO.puts log
+      {^pid, :result, %Res{status: _status}} ->
+        IO.puts "restarting"
+        stop_current_node_process()
+        start_node_server()
+    end
   end
 
-  defp shedule_work() do
-    IO.puts "HELLO WORLD"
+  defp stop_current_node_process() do
+    {output, 0} = System.cmd("lsof", ["-i"])
+    node_line =
+      output
+      |> String.split("\n")
+      |> Enum.find(&Regex.match?(~r/^node/, &1))
+    node_pid = Regex.run(~r/^node\s+(\d+)/, node_line) |> Enum.at(1)
+    System.cmd "kill", ["-9", node_pid]
   end
 end
